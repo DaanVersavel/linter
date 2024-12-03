@@ -5394,6 +5394,128 @@ function _createForOfIteratorHelper(o,allowArrayLike){var it=typeof Symbol!=="un
 
 /***/ }),
 
+/***/ 7930:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const isexe = __nccwpck_require__(7126)
+const { join, delimiter, sep, posix } = __nccwpck_require__(1017)
+
+const isWindows = process.platform === 'win32'
+
+// used to check for slashed in commands passed in. always checks for the posix
+// seperator on all platforms, and checks for the current separator when not on
+// a posix platform. don't use the isWindows check for this since that is mocked
+// in tests but we still need the code to actually work when called. that is also
+// why it is ignored from coverage.
+/* istanbul ignore next */
+const rSlash = new RegExp(`[${posix.sep}${sep === posix.sep ? '' : sep}]`.replace(/(\\)/g, '\\$1'))
+const rRel = new RegExp(`^\\.${rSlash.source}`)
+
+const getNotFoundError = (cmd) =>
+  Object.assign(new Error(`not found: ${cmd}`), { code: 'ENOENT' })
+
+const getPathInfo = (cmd, {
+  path: optPath = process.env.PATH,
+  pathExt: optPathExt = process.env.PATHEXT,
+  delimiter: optDelimiter = delimiter,
+}) => {
+  // If it has a slash, then we don't bother searching the pathenv.
+  // just check the file itself, and that's it.
+  const pathEnv = cmd.match(rSlash) ? [''] : [
+    // windows always checks the cwd first
+    ...(isWindows ? [process.cwd()] : []),
+    ...(optPath || /* istanbul ignore next: very unusual */ '').split(optDelimiter),
+  ]
+
+  if (isWindows) {
+    const pathExtExe = optPathExt ||
+      ['.EXE', '.CMD', '.BAT', '.COM'].join(optDelimiter)
+    const pathExt = pathExtExe.split(optDelimiter).reduce((acc, item) => {
+      acc.push(item)
+      acc.push(item.toLowerCase())
+      return acc
+    }, [])
+    if (cmd.includes('.') && pathExt[0] !== '') {
+      pathExt.unshift('')
+    }
+    return { pathEnv, pathExt, pathExtExe }
+  }
+
+  return { pathEnv, pathExt: [''] }
+}
+
+const getPathPart = (raw, cmd) => {
+  const pathPart = /^".*"$/.test(raw) ? raw.slice(1, -1) : raw
+  const prefix = !pathPart && rRel.test(cmd) ? cmd.slice(0, 2) : ''
+  return prefix + join(pathPart, cmd)
+}
+
+const which = async (cmd, opt = {}) => {
+  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
+  const found = []
+
+  for (const envPart of pathEnv) {
+    const p = getPathPart(envPart, cmd)
+
+    for (const ext of pathExt) {
+      const withExt = p + ext
+      const is = await isexe(withExt, { pathExt: pathExtExe, ignoreErrors: true })
+      if (is) {
+        if (!opt.all) {
+          return withExt
+        }
+        found.push(withExt)
+      }
+    }
+  }
+
+  if (opt.all && found.length) {
+    return found
+  }
+
+  if (opt.nothrow) {
+    return null
+  }
+
+  throw getNotFoundError(cmd)
+}
+
+const whichSync = (cmd, opt = {}) => {
+  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
+  const found = []
+
+  for (const pathEnvPart of pathEnv) {
+    const p = getPathPart(pathEnvPart, cmd)
+
+    for (const ext of pathExt) {
+      const withExt = p + ext
+      const is = isexe.sync(withExt, { pathExt: pathExtExe, ignoreErrors: true })
+      if (is) {
+        if (!opt.all) {
+          return withExt
+        }
+        found.push(withExt)
+      }
+    }
+  }
+
+  if (opt.all && found.length) {
+    return found
+  }
+
+  if (opt.nothrow) {
+    return null
+  }
+
+  throw getNotFoundError(cmd)
+}
+
+module.exports = which
+which.sync = whichSync
+
+
+/***/ }),
+
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -6317,128 +6439,6 @@ function version(uuid) {
 
 var _default = version;
 exports["default"] = _default;
-
-/***/ }),
-
-/***/ 6143:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const isexe = __nccwpck_require__(7126)
-const { join, delimiter, sep, posix } = __nccwpck_require__(1017)
-
-const isWindows = process.platform === 'win32'
-
-// used to check for slashed in commands passed in. always checks for the posix
-// seperator on all platforms, and checks for the current separator when not on
-// a posix platform. don't use the isWindows check for this since that is mocked
-// in tests but we still need the code to actually work when called. that is also
-// why it is ignored from coverage.
-/* istanbul ignore next */
-const rSlash = new RegExp(`[${posix.sep}${sep === posix.sep ? '' : sep}]`.replace(/(\\)/g, '\\$1'))
-const rRel = new RegExp(`^\\.${rSlash.source}`)
-
-const getNotFoundError = (cmd) =>
-  Object.assign(new Error(`not found: ${cmd}`), { code: 'ENOENT' })
-
-const getPathInfo = (cmd, {
-  path: optPath = process.env.PATH,
-  pathExt: optPathExt = process.env.PATHEXT,
-  delimiter: optDelimiter = delimiter,
-}) => {
-  // If it has a slash, then we don't bother searching the pathenv.
-  // just check the file itself, and that's it.
-  const pathEnv = cmd.match(rSlash) ? [''] : [
-    // windows always checks the cwd first
-    ...(isWindows ? [process.cwd()] : []),
-    ...(optPath || /* istanbul ignore next: very unusual */ '').split(optDelimiter),
-  ]
-
-  if (isWindows) {
-    const pathExtExe = optPathExt ||
-      ['.EXE', '.CMD', '.BAT', '.COM'].join(optDelimiter)
-    const pathExt = pathExtExe.split(optDelimiter).reduce((acc, item) => {
-      acc.push(item)
-      acc.push(item.toLowerCase())
-      return acc
-    }, [])
-    if (cmd.includes('.') && pathExt[0] !== '') {
-      pathExt.unshift('')
-    }
-    return { pathEnv, pathExt, pathExtExe }
-  }
-
-  return { pathEnv, pathExt: [''] }
-}
-
-const getPathPart = (raw, cmd) => {
-  const pathPart = /^".*"$/.test(raw) ? raw.slice(1, -1) : raw
-  const prefix = !pathPart && rRel.test(cmd) ? cmd.slice(0, 2) : ''
-  return prefix + join(pathPart, cmd)
-}
-
-const which = async (cmd, opt = {}) => {
-  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
-  const found = []
-
-  for (const envPart of pathEnv) {
-    const p = getPathPart(envPart, cmd)
-
-    for (const ext of pathExt) {
-      const withExt = p + ext
-      const is = await isexe(withExt, { pathExt: pathExtExe, ignoreErrors: true })
-      if (is) {
-        if (!opt.all) {
-          return withExt
-        }
-        found.push(withExt)
-      }
-    }
-  }
-
-  if (opt.all && found.length) {
-    return found
-  }
-
-  if (opt.nothrow) {
-    return null
-  }
-
-  throw getNotFoundError(cmd)
-}
-
-const whichSync = (cmd, opt = {}) => {
-  const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt)
-  const found = []
-
-  for (const pathEnvPart of pathEnv) {
-    const p = getPathPart(pathEnvPart, cmd)
-
-    for (const ext of pathExt) {
-      const withExt = p + ext
-      const is = isexe.sync(withExt, { pathExt: pathExtExe, ignoreErrors: true })
-      if (is) {
-        if (!opt.all) {
-          return withExt
-        }
-        found.push(withExt)
-      }
-    }
-  }
-
-  if (opt.all && found.length) {
-    return found
-  }
-
-  if (opt.nothrow) {
-    return null
-  }
-
-  throw getNotFoundError(cmd)
-}
-
-module.exports = which
-which.sync = whichSync
-
 
 /***/ }),
 
@@ -7466,11 +7466,11 @@ class ESLint {
 	 * @returns {{status: number, stdout: string, stderr: string}} - Output of the lint command
 	 */
 	static lint(dir, extensions, args = "", fix = false, prefix = "") {
-		const extensionsArg = extensions.map((ext) => `.${ext}`).join(",");
+		// const extensionsArg = extensions.map((ext) => `.${ext}`).join(",");
 		const fixArg = fix ? "--fix" : "";
 		const commandPrefix = prefix || getNpmBinCommand(dir);
 		return run(
-			`${commandPrefix} eslint --ext ${extensionsArg} ${fixArg} --no-color --format json ${args} "."`,
+			`${commandPrefix} eslint${fixArg} --no-color --format json ${args} "."`,
 			{
 				dir,
 				ignoreErrors: true,
@@ -9583,7 +9583,7 @@ var os = __nccwpck_require__(612);
 var process = __nccwpck_require__(7742);
 var fs = __nccwpck_require__(7561);
 var path = __nccwpck_require__(9411);
-var which = __nccwpck_require__(6143);
+var which = __nccwpck_require__(7930);
 var node_util = __nccwpck_require__(7261);
 
 function _interopNamespaceDefault(e) {

@@ -10,7 +10,7 @@
     "@actions/http-client" "^2.0.1"
     uuid "^8.3.2"
 
-"@actions/http-client@^2.0.1":
+  "@actions/http-client@^2.0.1":
   version "2.0.1"
   resolved "https://registry.npmjs.org/@actions/http-client/-/http-client-2.0.1.tgz"
   integrity sha512-PIXiMVtz6VvyaRsGY268qvj57hXQEpsYogYOu2nrQhlf+XCGmZstmuZBbAybUl1nQGnvS1k1eEsQ69ZoD7xlSw==
