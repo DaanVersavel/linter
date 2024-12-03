@@ -7470,7 +7470,7 @@ class ESLint {
 		const fixArg = fix ? "--fix" : "";
 		const commandPrefix = prefix || getNpmBinCommand(dir);
 		return run(
-			`${commandPrefix} eslint${fixArg} --no-color --format json ${args} "."`,
+			`${commandPrefix} eslint ${fixArg} --no-color --format json ${args} "."`,
 			{
 				dir,
 				ignoreErrors: true,
