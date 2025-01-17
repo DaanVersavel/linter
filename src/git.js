@@ -34,7 +34,7 @@ function checkOutRemoteBranch(context) {
 	// Switch to remote branch
 	core.info(`Switching to the "${context.branch}" branch`);
 	run(`git branch --force ${context.branch} --track ${remote}/${context.branch}`);
-	run(`git checkout ${context.branch}`);
+	run(`git checkout ${context.branch} --no-verify`);
 }
 
 /**
